@@ -1,5 +1,23 @@
 <?php
 
+//var_dump($_SERVER);
+
+$dir = dirname($_SERVER['SCRIPT_NAME']);
+
+while (!file_exists($_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME'])) {
+    $_SERVER['SCRIPT_NAME'] = $dir.'/index.php';
+    $dir = dirname($dir);
+}
+
+include $_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME'];
+
+#return false;
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+?>
+
+
+<?php
+
 error_reporting(0);
 function build_url($parts, $encode = 1) {
     if ($encode) {
