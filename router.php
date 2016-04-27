@@ -1,20 +1,47 @@
 <?php
 
-//var_dump($_SERVER);
+//define('ERR_403', __DIR__.'/403.php');
+//define('ERR_404', __DIR__.'/404.php');
 
-$dir = dirname($_SERVER['SCRIPT_NAME']);
+function loadScript($file) {
+    if (!file_exists($file)) {
+        $index = getIndex();
 
-while (!file_exists($_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME'])) {
-    $_SERVER['SCRIPT_NAME'] = $dir.'/index.php';
-    $dir = dirname($dir);
+        if (file_exists($index)) {
+            include $index;
+            exit;
+        }
+
+        if (file_exists(@ERR_404)) {
+            include ERR_404;
+            exit;
+        }
+    }
+
+    return false;
 }
 
-include $_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME'];
+function getScript() {
+    $script = $_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME'];
 
-#return false;
+    return $script;
+}
+
+function getIndex() {
+    $dir = $_SERVER['SCRIPT_NAME'];
+
+    while (!is_dir($_SERVER['DOCUMENT_ROOT'].$dir)) {
+        $dir = dirname($dir);
+    }
+
+    $_SERVER['SCRIPT_NAME'] = rtrim($dir, '\\/').'/index.php';
+
+    return getScript();
+}
+
+return loadScript(getScript());
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 ?>
-
 
 <?php
 
