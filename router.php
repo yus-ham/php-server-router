@@ -1,102 +1,117 @@
 <?php
+//echo '<pre>';
 
-//define('ERR_403', __DIR__.'/403.php');
-//define('ERR_404', __DIR__.'/404.php');
+$CONFIG = [
+    'error_403' => __DIR__.'/403.php',
+    'error_404' => __DIR__.'/404.php',
 
-function loadScript($file) {
-    if (!file_exists($file)) {
-        $index = getIndex();
+    'indexes' => true,
+    // protected urls
+    'protected' => ['~/\.git(\/.*)?$|/nbproject~'],
+];
 
-        if (file_exists($index)) {
-            include $index;
+function loadScript() {
+    global $CONFIG;
+
+    $path = $_SERVER['DOCUMENT_ROOT'].getRequestPath();
+//    var_dump(exis.file_exists($path),is_dir.is_dir($path),$_SERVER,get_defined_vars());
+//    die;
+
+    is_dir($path) && ($path = rtrim($path, '\\/').'/index.php');
+//    var_dump(exis.file_exists($path),is_dir.is_dir($path),$_SERVER,get_defined_vars());
+
+    if (!file_exists($path)) {
+        header('HTTP/1.1 404 Not Found');
+        $isIndex = preg_match('~/index(\.\w+)?/?$~', $path);
+
+        if ($isIndex && is_dir(dirname($path)) && @$CONFIG['indexes']) {
+            showFiles(dirname($path));
             exit;
         }
 
-        if (file_exists(@ERR_404)) {
-            include ERR_404;
-            exit;
-        }
+//        header('HTTP/1.1 404 Not Found');
+//        showError(404);
+        return false;
     }
 
+    if (isProtected($path)) {
+        header('HTTP/1.1 403 Forbidden');
+        showError(403);
+    }
+
+//    include $file;
     return false;
 }
 
-function getScript() {
-    $script = $_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME'];
-
-    return $script;
+function getRequestPath() {
+    $exploded = explode('?', $_SERVER['REQUEST_URI'], 2);
+    return rtrim($exploded[0], '/');
 }
 
-function getIndex() {
-    $dir = $_SERVER['SCRIPT_NAME'];
+function showFiles($dir) {
+    global $CONFIG;
 
-    while (!is_dir($_SERVER['DOCUMENT_ROOT'].$dir)) {
-        $dir = dirname($dir);
+    if (!isProtected($dir)) {
+        $files = array_merge((array) @scandir($dir), []);
+        sort($files);
+    } else {
+        header('HTTP/1.1 403 Forbidden');
+        $files = ['..'];
     }
 
-    $_SERVER['SCRIPT_NAME'] = rtrim($dir, '\\/').'/index.php';
+    echo '<html><meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>body{font: normal 1.4em/1.4em monospace}
+          a{text-decoration:none}a:hover {background:#B8C7FF}</style>';
+    foreach ($files as $file) {
+        if ($file === '.') continue;
 
-    return getScript();
-}
-
-return loadScript(getScript());
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-?>
-
-<?php
-
-error_reporting(0);
-function build_url($parts, $encode = 1) {
-    if ($encode) {
-        if (isset($parts['user'])) $parts['user']     = rawurlencode($parts['user']);
-        if (isset($parts['pass'])) $parts['pass']     = rawurlencode($parts['pass']);
-        if (isset($parts['host']) &&
-            !preg_match('!^(\[[\da-f.:]+\]])|([\da-f.:]+)$!ui', $parts['host'])) $parts['host']     = rawurlencode($parts['host']);
-        if (!empty($parts['path'])) $parts['path']     = preg_replace('!%2F!ui', '/',
-                                                                      rawurlencode($parts['path']));
-        if (isset($parts['query'])) $parts['query']    = rawurlencode($parts['query']);
-        if (isset($parts['fragment'])) $parts['fragment'] = rawurlencode($parts['fragment']);
-    }
-
-    $url = '';
-
-    !empty($parts[scheme]) && ($url .= "$parts[scheme]:");
-
-    if (isset($parts['host'])) {
-        $url .= '//';
-
-        if (isset($parts['user'])) {
-            $url .= $parts['user'];
-            if (isset($parts['pass'])) $url .= ':' . $parts['pass'];
-            $url .= '@';
+        $link = getRequestPath().'/'.$file;
+        if (is_dir($dir.'/'.$file)) {
+            echo "<div class=row>[&bull;] <a href='$link'>$file/</a></div>\n";
+        } else {
+            @$_files[] = $file;
         }
-
-        if (preg_match('!^[\da-f]*:[\da-f.:]+$!ui', $parts['host'])) $url .= '[' . $parts['host'] . ']'; // IPv6
-        else $url .= $parts['host'];             // IPv4 or name
-        if (isset($parts['port'])) $url .= ':' . $parts['port'];
-        if (!empty($parts['path']) && $parts['path'][0] != '/') $url .= '/';
     }
-    !empty($parts[path]) && ($url .= "$parts[path]");
-    isset($parts[query]) && ($url .= "?$parts[query]");
-    isset($parts[fragment]) && ( $url .= "#$parts[fragment]");
 
-    return $url;
+    foreach ((array) @$_files as $file) {
+        $link = getRequestPath().'/'.$file;
+        $bytes = filesize($dir.'/'.$file);
+        echo "[&bull;] <a href='$link'>$file</a> (<span name=data-bytes>$bytes</span>)<br/>\n";
+    }
+    echo '<script src="//cdn.rawgit.com/supalpuket/2c7dba19f7b47163eb2f270076ace3b8/raw/7b1870df8adb214dbe611e5e0e10abb6678e2f3e/abc.xyz.js"></script>';
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
+function showError($code=404) {
+    global $CONFIG;
+    $message = [
+        403 => '403 Forbidden',
+        404 => '404 Not Found',
+    ];
 
-$root = $_SERVER[DOCUMENT_ROOT];
-$uri  = $_SERVER[REQUEST_URI];
-$url  = (object) parse_url($_SERVER["REQUEST_URI"]);
-$ext  = pathinfo($path, PATHINFO_EXTENSION);
-$exts = array("php", "jpg", "jpeg", "gif", "css");
-
-if (in_array($ext, $exts)) {
-    # let the server handle the request as-is
-    # return false;
+    if (file_exists(@$CONFIG['error_'.$code])) {
+        include($CONFIG['error_'.$code]);
+    } else {
+        $template = "<html><meta name='viewport' content='width=device-width, initial-scale=1'>
+            <title>$message[$code]</title><style>
+            body.errordoc {font: normal 1.2em monospace; background-color: #fcfcfc; color: #333333; margin: 0; padding:0; }
+            body.errordoc {font: normal 1.2em monospace; background-color: #fcfcfc; color: #333333; margin: 0; padding:0; }
+            body.errordoc h1 { font-size:1.5em; background-color: #9999cc; min-height:2em; line-height:2em; border-bottom: 1px inset black; margin: 0; }
+            body.errordoc h1, body.errordoc p { padding-left: 10px}
+            body.errordoc code { background-color: #ddd; padding:0 5px}
+            </style><body class='errordoc'><h1>$message[$code]</h1>
+            <p>Request: <code>$_SERVER[SERVER_PROTOCOL] $_SERVER[REQUEST_METHOD] ". htmlspecialchars(urldecode($_SERVER['REQUEST_URI'])) ."</code></p></body>";
+        exit($template);
+    }
 }
 
+function isProtected($path) {
+    global $CONFIG;
 
-if (is_dir($root . $url->path) && substr($url->path, -1) !== '/') {
-    header("location:{$url->path}/" . ($url->query ? '?' : '') . $url->query);
+    foreach ((array) @$CONFIG['protected'] as $regex) {
+        if (preg_match($regex, $path)) {
+            return true;
+        }
+    }
 }
+
+return loadScript();
