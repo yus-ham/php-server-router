@@ -6,6 +6,7 @@ $CONFIG = [
     'error_404' => __DIR__.'/404.php',
 
     'indexes' => true,
+
     // protected urls
     'protected' => ['~/\.git(\/.*)?$|/nbproject~'],
 ];
@@ -13,12 +14,18 @@ $CONFIG = [
 function loadScript() {
     global $CONFIG;
 
-    $path = $_SERVER['DOCUMENT_ROOT'].getRequestPath();
-//    var_dump(exis.file_exists($path),is_dir.is_dir($path),$_SERVER,get_defined_vars());
-//    die;
+    $path = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']).getRequestPath();
 
-    is_dir($path) && ($path = rtrim($path, '\\/').'/index.php');
-//    var_dump(exis.file_exists($path),is_dir.is_dir($path),$_SERVER,get_defined_vars());
+    if (is_dir($path)) {
+        $path .= '/index.php';
+
+        // Spesial handling dot
+        if (strpos(getRequestPath(), '.') !== false
+        && file_exists($path)) {
+            include $path;
+            exit;
+        }
+    }
 
     if (!file_exists($path)) {
         header('HTTP/1.1 404 Not Found');
@@ -29,8 +36,6 @@ function loadScript() {
             exit;
         }
 
-//        header('HTTP/1.1 404 Not Found');
-//        showError(404);
         return false;
     }
 
@@ -38,9 +43,6 @@ function loadScript() {
         header('HTTP/1.1 403 Forbidden');
         showError(403);
     }
-
-//    include $file;
-    return false;
 }
 
 function getRequestPath() {
@@ -61,12 +63,12 @@ function showFiles($dir) {
 
     echo '<html><meta name="viewport" content="width=device-width, initial-scale=1">
           <style>body{font: normal 1.4em/1.4em monospace}
-          a{text-decoration:none}a:hover {background:#B8C7FF}</style>';
+          a{text-decoration:none} a:hover{background:#B8C7FF}</style>';
     foreach ($files as $file) {
         if ($file === '.') continue;
 
-        $link = getRequestPath().'/'.$file;
-        if (is_dir($dir.'/'.$file)) {
+        $link = getRequestPath()."/$file/";
+        if (is_dir("$dir/$file")) {
             echo "<div class=row>[&bull;] <a href='$link'>$file/</a></div>\n";
         } else {
             @$_files[] = $file;
@@ -108,10 +110,8 @@ function isProtected($path) {
     global $CONFIG;
 
     foreach ((array) @$CONFIG['protected'] as $regex) {
-        if (preg_match($regex, $path)) {
-            return true;
-        }
+        if (preg_match($regex, $path)) return true;
     }
 }
 
-return loadScript();
+return !!loadScript();
