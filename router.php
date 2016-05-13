@@ -53,17 +53,12 @@ function getRequestPath() {
 function showFiles($dir) {
     global $CONFIG;
 
-    if (!isProtected($dir)) {
-        $files = array_merge((array) @scandir($dir), []);
-        sort($files);
-    } else {
-        header('HTTP/1.1 403 Forbidden');
-        $files = ['..'];
-    }
-
+    $files = array_merge((array) @scandir($dir), []);
+    sort($files);
     echo '<html><meta name="viewport" content="width=device-width, initial-scale=1">
           <style>body{font: normal 1.4em/1.4em monospace}
           a{text-decoration:none} a:hover{background:#B8C7FF}</style>';
+
     foreach ($files as $file) {
         if ($file === '.') continue;
 
