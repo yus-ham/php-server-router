@@ -11,6 +11,7 @@ class Config {
 class Router {
 
   public static function run() {
+    self::isJsRequest() && self::sendJs();
     $path = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']) . self::getRequestPath();
 
     if (is_dir($path)) {
@@ -24,19 +25,19 @@ class Router {
       }
     }
 
+    if (self::isProtected($path)) {
+      header('HTTP/1.1 403 Forbidden');
+      self::showError(403, 'Forbidden', Config::ERROR_403_TEMPLATE);
+    }
+
     if (!file_exists($path)) {
       header('HTTP/1.1 404 Not Found');
       $isIndex = preg_match('~/index(\.\w+)?/?$~', $path);
 
       if ($isIndex && is_dir(dirname($path)) && Config::LIST_FILES) {
-        return self::showFiles(dirname($path));
+        exit(self::showFiles(dirname($path)));
       }
       return false;
-    }
-
-    if (self::isProtected($path)) {
-      header('HTTP/1.1 403 Forbidden');
-      showError(403, 'Forbidden', Config::ERROR_403_TEMPLATE);
     }
   }
 
@@ -46,11 +47,12 @@ class Router {
   }
 
   protected static function showFiles($dir) {
+    header('Content-Type: text/html');
     $files = array_merge((array) @scandir($dir), []);
     sort($files);
-    echo '<html><meta name="viewport" content="width=device-width, initial-scale=1">
+    echo '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
               <style>body{font: normal 1.4em/1.4em monospace}
-              a{text-decoration:none} a:hover{background:#B8C7FF}</style>';
+              a{text-decoration:none} a:hover{background:#B8C7FF}</style></head><body>';
 
     foreach ($files as $file) {
       if ($file === '.') {
@@ -69,7 +71,8 @@ class Router {
       $bytes = filesize($dir . '/' . $file);
       echo "[&bull;] <a href='$link'>$file</a> (<span name=data-bytes>$bytes</span>)<br/>\n";
     }
-    echo '<script src="//cdn.rawgit.com/supalpuket/2c7dba19f7b47163eb2f270076ace3b8/raw/7b1870df8adb214dbe611e5e0e10abb6678e2f3e/abc.xyz.js"></script>';
+    $time = filemtime(__FILE__);
+    echo "<script src=/?$time.js></script></body></html>";
   }
 
   protected static function showError($code, $reason, string $templateFIle = null) {
@@ -78,7 +81,7 @@ class Router {
     }
     $template = "<html><meta name='viewport' content='width=device-width, initial-scale=1'>
                 <title>$code $reason</title><body>
-                <p><code>>> $_SERVER[REQUEST_METHOD] " . htmlspecialchars(urldecode($_SERVER['REQUEST_URI'])) . "$_SERVER[SERVER_PROTOCOL]</code></p>
+                <p><code>>> $_SERVER[REQUEST_METHOD] " . htmlspecialchars(urldecode($_SERVER['REQUEST_URI'])) . " $_SERVER[SERVER_PROTOCOL]</code></p>
                 <p><code><< $_SERVER[SERVER_PROTOCOL] $code $reason</code></p></body>";
     exit($template);
   }
@@ -89,6 +92,27 @@ class Router {
         return true;
       }
     }
+  }
+
+  protected static function isJsRequest() {
+    return $_SERVER['REQUEST_URI'] === "/?".filemtime(__FILE__).".js";
+  }
+
+  protected static function sendJs() {
+    header('Content-Type: application/javascript');
+    exit(<<<_JS_
+// link: http://stackoverflow.com/a/20463021
+function fileSizeIEC(a,b,c,d,e){
+ return (b=Math,c=b.log,d=1024,e=c(a)/c(d)|0,a/b.pow(d,e)).toFixed(2)
+ +' '+(e?'KMGTPEZY'[--e]+'iB':'Bytes')
+}
+
+e=document.getElementsByName('data-bytes')
+for(i=0;i<e.length;i++) {
+    e[i].innerHTML = fileSizeIEC(e[i].innerHTML)
+}
+_JS_
+    );
   }
 }
 
