@@ -1,10 +1,10 @@
 <?php
 //echo '<pre>';
 
-class Config {
-  const ERROR_403_TEMPLATE = __DIR__ . '/403.php';
-  const PROTECTED_PATH_REGEXES = ['~/\.git(\/.*)?$|/nbproject~'];
-  const LIST_FILES = true;
+class Config
+{
+  const protected_paths = '~/\.git(\/.*)?$|/nbproject~';
+  const show_files = true;
 }
 
 class Router {
@@ -26,13 +26,13 @@ class Router {
 
     if (self::isProtected($path)) {
       header('HTTP/1.1 403 Forbidden');
-      self::showError(403, 'Forbidden', Config::ERROR_403_TEMPLATE);
+      self::showError(403, 'Forbidden');
     }
 
     if (!file_exists($path)) {
       $isIndex = preg_match('~/index(\.\w+)?/?$~', $path);
 
-      if ($isIndex && is_dir(dirname($path)) && Config::LIST_FILES) {
+      if ($isIndex && is_dir(dirname($path)) && Config::show_files) {
         exit(self::showFiles(dirname($path)));
       }
       return false;
@@ -73,10 +73,7 @@ class Router {
     echo "<script src=/?$time.js></script></body></html>";
   }
 
-  protected static function showError($code, $reason, string $templateFIle = null) {
-    if (file_exists($templateFIle)) {
-      return include($templateFIle);
-    }
+  protected static function showError($code, $reason) {
     $template = "<html><meta name='viewport' content='width=device-width, initial-scale=1'>
                 <title>$code $reason</title><body>
                 <p><code>>> $_SERVER[REQUEST_METHOD] " . htmlspecialchars(urldecode($_SERVER['REQUEST_URI'])) . " $_SERVER[SERVER_PROTOCOL]</code></p>
@@ -85,10 +82,9 @@ class Router {
   }
 
   protected static function isProtected($path) {
-    foreach ((array) Config::PROTECTED_PATH_REGEXES as $regex) {
-      if (preg_match($regex, $path)) {
-        return true;
-      }
+    $regex = Config::protected_paths;
+    if (preg_match($regex, $path)) {
+      return true;
     }
   }
 
@@ -98,6 +94,7 @@ class Router {
 
   protected static function sendJs() {
     header('Content-Type: application/javascript');
+    header('Cache-Control: public, max-age='. strtotime('6 month'));
     exit(<<<_JS_
 // link: http://stackoverflow.com/a/20463021
 fileSizeIEC = (a,b,c,d,e) => (b=Math,c=b.log,d=1024,e=c(a)/c(d)|0,a/b.pow(d,e)).toFixed(2) +' '+(e?'KMGTPEZY'[--e]+'iB':'Bytes')
