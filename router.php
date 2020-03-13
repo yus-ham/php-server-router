@@ -3,7 +3,6 @@
 
 class Config {
   const ERROR_403_TEMPLATE = __DIR__ . '/403.php';
-  const ERROR_404_TEMPLATE = __DIR__ . '/404.php';
   const PROTECTED_PATH_REGEXES = ['~/\.git(\/.*)?$|/nbproject~'];
   const LIST_FILES = true;
 }
