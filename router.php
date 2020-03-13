@@ -3,43 +3,46 @@
 
 class Config
 {
+  const index_script = 'index.php';
   const protected_paths = '~/\.git(\/.*)?$|/nbproject~';
   const show_files = true;
 }
 
+
 class Router {
 
   public static function run() {
-    self::isJsRequest() && self::sendJs();
-    $path = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']) . self::getRequestPath();
+    if (self::isJsRequest()) {
+      return self::sendJs();
+    }
 
-    if (is_dir($path)) {
-      $path .= '/index.php';
+    $reqPath = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']) . self::getRequestPath();
 
-      // PHP fails to serve path that contains dot
-      if (strpos(self::getRequestPath(), '.') !== false && is_file($path)) {
-        chdir(dirname($path));
-        $_SERVER['SCRIPT_FILENAME'] = $path;
-        $_SERVER['SCRIPT_NAME'] .= 'index.php';
-        $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
-        include $path;
-        exit;
+    if (is_dir($reqPath)) {
+      $dir = $reqPath;
+      $reqPath = $dir .'/'. Config::index_script;
+
+      if (is_file($reqPath)) {
+        // PHP fails to serve path that contains dot
+        $hasDot = strpos(self::getRequestPath(), '.') !== false;
+        return $hasDot ? self::serveScript($dir) : null;
+      }
+      if (Config::show_files) {
+        exit(self::showFiles($dir));
       }
     }
 
-    if (self::isProtected($path)) {
+    if (self::isProtected($reqPath)) {
       header('HTTP/1.1 403 Forbidden');
       self::showError(403, 'Forbidden');
     }
+  }
 
-    if (!file_exists($path)) {
-      $isIndex = preg_match('~/index(\.\w+)?/?$~', $path);
-
-      if ($isIndex && is_dir(dirname($path)) && Config::show_files) {
-        exit(self::showFiles(dirname($path)));
-      }
-      return false;
-    }
+  protected static function serveScript($dir) {
+    chdir($dir);
+    $_SERVER['SCRIPT_NAME'] .= '/' . Config::index_script;
+    $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
+    include $_SERVER['SCRIPT_FILENAME'] = $dir .'/'. Config::index_script;
   }
 
   protected static function getRequestPath() {
@@ -98,12 +101,9 @@ class Router {
   protected static function sendJs() {
     header('Content-Type: application/javascript');
     header('Cache-Control: public, max-age='. strtotime('6 month'));
-    exit(<<<_JS_
-// link: http://stackoverflow.com/a/20463021
-fileSizeIEC = (a,b,c,d,e) => (b=Math,c=b.log,d=1024,e=c(a)/c(d)|0,a/b.pow(d,e)).toFixed(2) +' '+(e?'KMGTPEZY'[--e]+'iB':'Bytes')
-document.querySelectorAll('.filesize').forEach((e) => e.innerHTML = fileSizeIEC(e.innerHTML))
-_JS_
-    );
+    echo "// link: http://stackoverflow.com/a/20463021"
+       . "\nfileSizeIEC = (a,b,c,d,e) => (b=Math,c=b.log,d=1024,e=c(a)/c(d)|0,a/b.pow(d,e)).toFixed(2) +' '+(e?'KMGTPEZY'[--e]+'iB':'Bytes')"
+       . "\ndocument.querySelectorAll('.filesize').forEach((e) => e.innerHTML = fileSizeIEC(e.innerHTML))";
   }
 }
 
