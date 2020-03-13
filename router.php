@@ -13,7 +13,7 @@ class Router {
 
   public static function run() {
     if (self::isJsRequest()) {
-      return self::sendJs();
+      exit(self::sendJs());
     }
 
     $reqPath = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']) . self::getRequestPath();
