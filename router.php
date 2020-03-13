@@ -16,9 +16,12 @@ class Router {
     if (is_dir($path)) {
       $path .= '/index.php';
 
-      // Spesial dot handling
-      // PHP treat not exist on path containing dots
-      if (strpos(self::getRequestPath(), '.') !== false && file_exists($path)) {
+      // PHP fails to serve path that contains dot
+      if (strpos(self::getRequestPath(), '.') !== false && is_file($path)) {
+        chdir(dirname($path));
+        $_SERVER['SCRIPT_FILENAME'] = $path;
+        $_SERVER['SCRIPT_NAME'] .= 'index.php';
+        $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
         include $path;
         exit;
       }
