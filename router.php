@@ -31,7 +31,6 @@ class Router {
     }
 
     if (!file_exists($path)) {
-      header('HTTP/1.1 404 Not Found');
       $isIndex = preg_match('~/index(\.\w+)?/?$~', $path);
 
       if ($isIndex && is_dir(dirname($path)) && Config::LIST_FILES) {
@@ -69,7 +68,7 @@ class Router {
     foreach ((array) @$_files as $file) {
       $link = self::getRequestPath() . '/' . $file;
       $bytes = filesize($dir . '/' . $file);
-      echo "[&bull;] <a href='$link'>$file</a> (<span name=data-bytes>$bytes</span>)<br/>\n";
+      echo "[&bull;] <a href='$link'>$file</a> (<span class=filesize>$bytes</span>)<br/>\n";
     }
     $time = filemtime(__FILE__);
     echo "<script src=/?$time.js></script></body></html>";
@@ -102,15 +101,8 @@ class Router {
     header('Content-Type: application/javascript');
     exit(<<<_JS_
 // link: http://stackoverflow.com/a/20463021
-function fileSizeIEC(a,b,c,d,e){
- return (b=Math,c=b.log,d=1024,e=c(a)/c(d)|0,a/b.pow(d,e)).toFixed(2)
- +' '+(e?'KMGTPEZY'[--e]+'iB':'Bytes')
-}
-
-e=document.getElementsByName('data-bytes')
-for(i=0;i<e.length;i++) {
-    e[i].innerHTML = fileSizeIEC(e[i].innerHTML)
-}
+fileSizeIEC = (a,b,c,d,e) => (b=Math,c=b.log,d=1024,e=c(a)/c(d)|0,a/b.pow(d,e)).toFixed(2) +' '+(e?'KMGTPEZY'[--e]+'iB':'Bytes')
+document.querySelectorAll('.filesize').forEach((e) => e.innerHTML = fileSizeIEC(e.innerHTML))
 _JS_
     );
   }
