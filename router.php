@@ -3,7 +3,7 @@
 
 class Config
 {
-  const index_script = 'index.php';
+  const index_scripts = ['index.php','index.html'];
   const protected_paths = '~/\.git(\/.*)?$|/nbproject~';
   const show_files = true;
 }
@@ -19,17 +19,7 @@ class Router {
     $reqPath = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']) . self::getRequestPath();
 
     if (is_dir($reqPath)) {
-      $dir = $reqPath;
-      $reqPath = $dir .'/'. Config::index_script;
-
-      if (is_file($reqPath)) {
-        // PHP fails to serve path that contains dot
-        $hasDot = strpos(self::getRequestPath(), '.') !== false;
-        return $hasDot ? self::serveScript($dir) : null;
-      }
-      if (Config::show_files) {
-        exit(self::showFiles($dir));
-      }
+      self::serveDir($reqPath);
     }
 
     if (self::isProtected($reqPath)) {
@@ -38,11 +28,28 @@ class Router {
     }
   }
 
-  protected static function serveScript($dir) {
+  protected static function serveDir($dir) {
+    foreach (Config::index_scripts as $script) {
+      if (is_file("$dir/$script")) {
+        return self::serveScript($dir, $script);
+      }
+    }
+    if (Config::show_files) {
+      exit(self::showFiles($dir));
+    }
+  }
+
+  protected static function serveScript($dir, $script) {
+    // PHP fails to serve path that contains dot
+    $hasDot = strpos(self::getRequestPath(), '.') !== false;
+    if (!$hasDot) {
+      return;
+    }
     chdir($dir);
-    $_SERVER['SCRIPT_NAME'] .= '/' . Config::index_script;
+    $_SERVER['SCRIPT_NAME'] .= "/$script";
     $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
-    include $_SERVER['SCRIPT_FILENAME'] = $dir .'/'. Config::index_script;
+    include $_SERVER['SCRIPT_FILENAME'] = "$dir/$script";
+    exit();
   }
 
   protected static function getRequestPath() {
