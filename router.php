@@ -1,9 +1,9 @@
 <?php
-//echo '<pre>';
+// @link https://gist.github.com/sup-ham/5b132ce4547b43aa8b2d
 
 class Config
 {
-  const index_scripts = ['index.php','index.html'];
+  const index_scripts = 'index.php|index.html';
   const protected_paths = '~/\.git(\/.*)?$|/nbproject~';
   const show_files = true;
 }
@@ -28,8 +28,16 @@ class Router {
     }
   }
 
+  protected static function scripts() {
+    $scripts = explode('|', Config::index_scripts);
+    if (getenv('ALT_SCRIPT')) {
+      $scripts = array_merge($scripts, explode(',', getenv('ALT_SCRIPT')));
+    }
+    return $scripts;
+  }
+
   protected static function serveDir($dir) {
-    foreach (Config::index_scripts as $script) {
+    foreach (self::scripts() as $script) {
       if (is_file("$dir/$script")) {
         return self::serveScript($dir, $script);
       }
