@@ -1,9 +1,11 @@
 <?php
 // @link https://gist.github.com/sup-ham/5b132ce4547b43aa8b2d
 
+// env vars
+// ALT_SCRIPT=index.php,__app.html,etc...   comma separated
+
 class Config
 {
-  const index_scripts = 'index.php|index.html';
   const protected_paths = '~/\.git(\/.*)?$|/nbproject~';
   const show_files = true;
 }
@@ -11,12 +13,19 @@ class Config
 
 class Router {
 
+  // default = index.php,index.html
+  // @see [getScripts()]
+  static $scripts;
+
   public static function run() {
     if (self::isJsRequest()) {
       exit(self::sendJs());
     }
 
-    $reqPath = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']) . self::getRequestPath();
+    $webroot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+    $reqUrl = self::getRequestUrl();
+    $reqPath = $webroot . $reqUrl;
+    error_log("[router] \$reqPath = \"$reqPath\"");
 
     if (is_dir($reqPath)) {
       self::serveDir($reqPath);
@@ -26,18 +35,37 @@ class Router {
       header('HTTP/1.1 403 Forbidden');
       self::showError(403, 'Forbidden');
     }
+
+    if (!is_file($reqPath)) {
+      $i = 0;
+      do {
+        if ($i++ >= 100) {
+          break;
+        }
+        $reqUrl = str_replace('\\', '/', dirname($reqUrl));
+        error_log("[router] trying to serve path: $reqUrl");
+        foreach (self::getScripts() as $script) {
+          if (is_file("$webroot$reqUrl/$script")) {
+            return self::serveScript($webroot . $reqUrl, $script);
+          }
+        }
+      } while ($reqUrl && $reqUrl !== '/');
+    }
   }
 
-  protected static function scripts() {
-    $scripts = explode('|', Config::index_scripts);
-    if (getenv('ALT_SCRIPT')) {
-      $scripts = array_merge($scripts, explode(',', getenv('ALT_SCRIPT')));
+  protected static function getScripts() {
+    if (!self::$scripts) {
+      self::$scripts = array('index.php', 'index.html');
+
+      if (getenv('ALT_SCRIPT')) {
+        self::$scripts = array_merge(explode(',', getenv('ALT_SCRIPT')), self::$scripts);
+      }
     }
-    return $scripts;
+    return self::$scripts;
   }
 
   protected static function serveDir($dir) {
-    foreach (self::scripts() as $script) {
+    foreach (self::getScripts() as $script) {
       if (is_file("$dir/$script")) {
         return self::serveScript($dir, $script);
       }
@@ -48,9 +76,12 @@ class Router {
   }
 
   protected static function serveScript($dir, $script) {
+    error_log("[router] SCRIPT_FILENAME=$dir/$script");
+
     // PHP fails to serve path that contains dot
-    $hasDot = strpos(self::getRequestPath(), '.') !== false;
-    if (!$hasDot) {
+    $hasDot = strpos($dir, '.') !== false;
+    $isPhp = pathinfo($script, PATHINFO_EXTENSION) === 'php';
+    if (!$hasDot && $isPhp) {
       return;
     }
     chdir($dir);
@@ -60,7 +91,7 @@ class Router {
     exit();
   }
 
-  protected static function getRequestPath() {
+  protected static function getRequestUrl() {
     $exploded = explode('?', $_SERVER['REQUEST_URI'], 2);
     return rtrim($exploded[0], '/');
   }
@@ -77,7 +108,7 @@ class Router {
       if ($file === '.') {
         continue;
       }
-      $link = self::getRequestPath() . "/$file/";
+      $link = self::getRequestUrl() . "/$file/";
       if (is_dir("$dir/$file")) {
         echo "<div class=row>[&bull;] <a href='$link'>$file/</a></div>\n";
       } else {
@@ -86,7 +117,7 @@ class Router {
     }
 
     foreach ((array) @$_files as $file) {
-      $link = self::getRequestPath() . '/' . $file;
+      $link = self::getRequestUrl() . '/' . $file;
       $bytes = filesize($dir . '/' . $file);
       echo "[&bull;] <a href='$link'>$file</a> (<span class=filesize>$bytes</span>)<br/>\n";
     }
