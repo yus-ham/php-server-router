@@ -34,7 +34,7 @@ class Router {
     $path = $webroot . $reqUrl;
 
     if (is_dir($path)) {
-      self::serveDir($path);
+      return self::serveDir($path);
     }
 
     if (!is_file($path)) {
@@ -43,7 +43,10 @@ class Router {
         $reqUrl = str_replace('\\', '/', dirname($reqUrl));
         $reqUrl = rtrim($reqUrl, '/');
         $dir = $webroot . $reqUrl;
-        self::serveIndex($dir);
+
+        if (false === self::serveIndex($dir)) {
+          return;
+        }
       } while (($i++ < 20) && ($reqUrl && $reqUrl !== '/'));
     }
   }
@@ -64,13 +67,15 @@ class Router {
       $script = $dir .'/'. $script;
       error_log("[router] trying script: $script");
       if (is_file($script)) {
-        self::serveScript($script, $dir);
+        return self::serveScript($script, $dir);
       }
     }
   }
 
   protected static function serveDir($dir) {
-    self::serveIndex($dir);
+    if (false === self::serveIndex($dir)) {
+      return;
+    }
     http_response_code(404);
     if (Config::show_files) {
       exit(self::showFiles($dir));
@@ -84,7 +89,7 @@ class Router {
     $hasDot = strpos($dir, '.') !== false;
     $isPHP = pathinfo($script, PATHINFO_EXTENSION) === 'php';
     if (!$hasDot && $isPHP) {
-      return;
+      return false;
     }
     chdir($dir);
     $_SERVER['SCRIPT_NAME'] .= $script;
