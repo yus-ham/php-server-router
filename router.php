@@ -1,5 +1,5 @@
 <?php
-// @link https://gist.github.com/sup-ham/5b132ce4547b43aa8b2d
+// @link https://github.com/sup-ham/php-server-router
 
 // env vars
 // ALT_SCRIPT=index.php,__app.html,etc...   comma separated
