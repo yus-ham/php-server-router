@@ -17,7 +17,14 @@ class Router {
   // @see [getScripts()]
   static $scripts;
 
+  public static function setup() {
+    $port = ($_SERVER['SERVER_PORT'] != '80') ? ":$_SERVER[SERVER_PORT]" : "";
+    $_SERVER['SERVER_ADDR'] = "$_SERVER[SERVER_NAME]$port";
+  }
+
   public static function run() {
+    self::setup();
+
     if (self::isJsRequest()) {
       exit(self::sendJs());
     }
