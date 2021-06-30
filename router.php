@@ -40,7 +40,7 @@ class Router
   public static function run()
   {
     self::setup();
-    self::maybeOnlyJsRequest();
+    self::maybeFileRequest();
     return self::serveURI();
   }
 
@@ -240,13 +240,14 @@ class Router
 
     $reqUri = self::$requestURI;
 
+    echo "<table>";
     foreach ($files as $file) {
       if ($file === '.') {
         continue;
       }
       $link = "$reqUri/$file/";
       if (is_dir("$dir/$file")) {
-        echo "<div class=row>[&bull;] <a href='$link'>$file/</a></div>\n";
+        echo "<tr><td>[&plus;] <a href='$link'>$file/</a></td><td></td><td></td></tr>\n";
       } else {
         @$_files[] = $file;
       }
@@ -255,8 +256,10 @@ class Router
     foreach ((array) @$_files as $file) {
       $link = "$reqUri/$file";
       $bytes = filesize($dir . '/' . $file);
-      echo "[&bull;] <a href='$link'>$file</a> (<span class=filesize>$bytes</span>)<br/>\n";
+      echo "<tr><td>[&bull;] <a href='$link'>$file</a></td><td><span class=filesize>$bytes</span></td>";
+      echo "<td><a href='?view=$link'>view</a></td></tr>\n";
     }
+    echo "</table>";
 
     $time = filemtime(__FILE__);
     echo "<script src='/?$time.js'></script></body></html>";
@@ -279,8 +282,21 @@ class Router
     }
   }
 
-  protected static function maybeOnlyJsRequest()
+  protected static function maybeFileRequest()
   {
+    if ($file = $_GET['view']  ?? null) {
+      $players['mp4'] = fn () => include 'plyr.php';
+      $players['js'] = fn () => readfile(__DIR__ . '/' . $file);
+
+      $ext = pathinfo($file, PATHINFO_EXTENSION);
+      if ($player = $players[$ext] ?? null) {
+        $player();
+        die;
+      }
+
+      die('no viewer for ' . $file);
+    }
+
     if ($_SERVER['REQUEST_URI'] !== '/?' . filemtime(__FILE__) . '.js') {
       return;
     }
