@@ -21,6 +21,11 @@ class Router
   private static $rewriteURI;
   private static $parsedHtaccess = [];
 
+  private static $types = [
+    'css' => 'text/css',
+    'svg' => 'image/svg+xml',
+  ];
+
   // default = index.php,index.html
   // @see [getScripts()]
   public static $scripts;
@@ -64,11 +69,20 @@ class Router
         $_SERVER['PHP_SELF'] = $currentUri . self::$prevPathInfo . self::$pathInfo;
         self::includeScript($path);
       }
+      if (self::$pathInfo !== null) {
+        $ext = pathinfo($path, PATHINFO_EXTENSION);
+        if (isset(self::$types[$ext])) {
+          header('content-type: ' . self::$types[$ext]);
+        }
+        readfile($path);
+        exit();
+      }
       return false;
     }
 
     $i = 0;
     do {
+      self::$pathInfo = basename($currentUri) . (self::$pathInfo ? '/' . self::$pathInfo : '');
       $currentUri = rtrim(str_replace('\\', '/', dirname($currentUri)), '/');
       $dir = self::$docRoot . $currentUri;
 
@@ -190,7 +204,7 @@ class Router
       return false;
     }
 
-    if (self::$pathInfo) {
+    if (self::$pathInfo !== null) {
       $_SERVER['SCRIPT_NAME'] = substr($script, strlen(self::$docRoot));
       $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'] . self::$pathInfo;
     } else {
