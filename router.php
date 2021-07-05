@@ -24,6 +24,7 @@ class Router
   private static $types = [
     'css' => 'text/css',
     'svg' => 'image/svg+xml',
+    'js' => 'text/javascript',
   ];
 
   // default = index.php,index.html
@@ -70,12 +71,7 @@ class Router
         self::includeScript($path);
       }
       if (self::$pathInfo !== null) {
-        $ext = pathinfo($path, PATHINFO_EXTENSION);
-        if (isset(self::$types[$ext])) {
-          header('content-type: ' . self::$types[$ext]);
-        }
-        readfile($path);
-        exit();
+        self::readFile($path);
       }
       return false;
     }
@@ -282,13 +278,26 @@ class Router
     }
   }
 
+  protected static function readFile($file, $ext = null)
+  {
+    $ext = $ext ?: pathinfo($file, PATHINFO_EXTENSION);
+    if (isset(self::$types[$ext])) {
+      header('content-type: ' . self::$types[$ext]);
+    }
+    readfile($file);
+    exit();
+  }
+
   protected static function maybeFileRequest()
   {
     if ($file = $_GET['view']  ?? null) {
-      $players['mp4'] = fn () => include 'plyr.php';
-      $players['js'] = fn () => readfile(__DIR__ . '/' . $file);
-
       $ext = pathinfo($file, PATHINFO_EXTENSION);
+
+      $players['mp4'] = fn () => include 'plyr.php';
+
+      $players['js'] = fn() => self::readFile(__DIR__ . '/' . $file, $ext);
+      $players['css'] = $players['js'];
+
       if ($player = $players[$ext] ?? null) {
         $player();
         die;
