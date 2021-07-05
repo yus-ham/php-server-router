@@ -59,7 +59,7 @@
   <aside>
   </aside>
 
-  <script src="?view=plyr/js/demo.js" crossorigin="anonymous"></script>
+  <script type="module" src="?view=plyr/js/demo.js" crossorigin="anonymous"></script>
 </body>
 
 </html>
