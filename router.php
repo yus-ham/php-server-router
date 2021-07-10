@@ -63,12 +63,8 @@ class Router
       return self::serveDir($path, $currentUri);
     }
     if (is_file($path)) {
-      if (self::isDotPHP($path)) {
-        constant('Config::debug') && error_log(print_r(__METHOD__ . ' ' . $path, 1));
-        $_SERVER['SCRIPT_NAME'] = $currentUri;
-        $_SERVER['PATH_INFO'] = self::$pathInfo;
-        $_SERVER['PHP_SELF'] = $currentUri . self::$prevPathInfo . self::$pathInfo;
-        self::includeScript($path);
+      if (self::isDot('php', $path)) {
+        return self::serveScript($path, dirname($path), '');
       }
       if (self::$pathInfo !== null) {
         self::readFile($path);
@@ -78,7 +74,7 @@ class Router
 
     $i = 0;
     do {
-      self::$pathInfo = basename($currentUri) . (self::$pathInfo ? '/' . self::$pathInfo : '');
+      self::$pathInfo = basename($currentUri) . (self::$pathInfo !== null ? '/' . self::$pathInfo : '');
       $currentUri = rtrim(str_replace('\\', '/', dirname($currentUri)), '/');
       $dir = self::$docRoot . $currentUri;
 
@@ -108,24 +104,19 @@ class Router
       $script = $dir . '/' . $script;
       constant('Config::debug') && error_log("trying script: $script");
       if (is_file($script)) {
-        constant('Config::debug') && error_log("Found script: $script");
-        if (self::isHtaccess($script)) {
-          if (self::serveHtaccess($script, $dir, $currentUri) === null) {
-            continue;
-          }
+        if (self::serveHtaccess($script, $dir, $currentUri) === null) {
+          continue;
         }
         return self::serveScript($script, $dir, $currentUri);
       }
     }
   }
 
-  protected static function isHtaccess($file)
-  {
-    return strpos($file, '/.htaccess') !== false;
-  }
-
   protected static function serveHtaccess($file, $dir, $currentUri)
   {
+    if (!self::isDot('htaccess', $file)) {
+      return;
+    }
     if (in_array($file, self::$parsedHtaccess)) {
       return;
     }
@@ -196,7 +187,7 @@ class Router
 
     // PHP Built-in server fails to serve path that contains dot
     $hasDotInDir = strpos($dir, '.') !== false;
-    if (!$hasDotInDir && self::isDotPHP($script) && !self::$prevPathInfo) {
+    if (!$hasDotInDir && self::isDot('php', $script) && !self::$prevPathInfo) {
       return false;
     }
 
@@ -318,9 +309,9 @@ class Router
     die;
   }
 
-  public static function isDotPHP($file)
+  public static function isDot($ext, $file)
   {
-    return pathinfo($file, PATHINFO_EXTENSION) === 'php';
+    return pathinfo($file, PATHINFO_EXTENSION) === $ext;
   }
 }
 
