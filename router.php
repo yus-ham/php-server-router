@@ -115,7 +115,7 @@ class Router
   protected static function serveHtaccess($file, $dir, $currentUri)
   {
     if (!self::isDot('htaccess', $file)) {
-      return;
+      return false;
     }
     if (in_array($file, self::$parsedHtaccess)) {
       return;
