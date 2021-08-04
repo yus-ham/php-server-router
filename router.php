@@ -193,12 +193,11 @@ class Router
 
     if (self::$pathInfo !== null) {
       $_SERVER['SCRIPT_NAME'] = substr($script, strlen(self::$docRoot));
-      $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'] . self::$pathInfo;
     } else {
       $_SERVER['SCRIPT_NAME'] .= $script;
-      $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
     }
 
+    $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
     self::includeScript($script);
   }
 
@@ -206,7 +205,6 @@ class Router
   {
     chdir(dirname($script));
     include $_SERVER['SCRIPT_FILENAME'] = $script;
-    constant('Config::debug') && error_log("Script included: $script");
     exit();
   }
 
