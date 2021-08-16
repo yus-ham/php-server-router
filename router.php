@@ -25,6 +25,7 @@ class Router
     'css' => 'text/css',
     'svg' => 'image/svg+xml',
     'js' => 'text/javascript',
+    'pdf' => 'application/pdf',
   ];
 
   // default = index.php,index.html
