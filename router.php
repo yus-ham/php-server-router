@@ -48,6 +48,7 @@ class Router
 
   protected static function serveURI()
   {
+    constant('Config::debug') && error_log(__METHOD__);
     $currentUri = self::$requestURI;
     error_log("REQUEST_URI = $currentUri");
 
@@ -58,7 +59,7 @@ class Router
 
     self::$docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
     $path = self::$docRoot . $currentUri;
-    constant('Config::debug') && error_log('DOCUMENT_ROOT = ' . self::$docRoot);
+    constant('Config::debug') && error_log(print_r(['DOCUMENT_ROOT' => self::$docRoot, 'pathInfo' => self::$pathInfo], 1));
 
     if (is_dir($path)) {
       return self::serveDir($path, $currentUri);
@@ -101,10 +102,12 @@ class Router
 
   protected static function serveIndex($dir, $currentUri)
   {
+    constant('Config::debug') && error_log(print_r([__METHOD__, '$dir' => $dir, '$currentUri' => $currentUri, '$pathInfo' => self::$pathInfo],1));
     foreach (self::getScripts() as $script) {
       $script = $dir . '/' . $script;
       constant('Config::debug') && error_log("trying script: $script");
       if (is_file($script)) {
+        constant('Config::debug') && error_log("Script found!");
         if (self::serveHtaccess($script, $dir, $currentUri) === null) {
           continue;
         }
@@ -122,7 +125,7 @@ class Router
       return;
     }
     self::$parsedHtaccess[] = $file;
-    constant('Config::debug') && error_log(__METHOD__);
+    constant('Config::debug') && error_log(print_r([__METHOD__.' '.__LINE__, '$file' => $file, '$dir' => $dir, '$currentUri' => $currentUri, '$pathInfo' => self::$pathInfo], 1));
     $stopParsing = false;
 
     foreach (file($file) as $line) {
@@ -130,11 +133,12 @@ class Router
         return;
       }
       @list($command, $args) = explode(' ', trim($line), 2);
-      constant('Config::debug') && error_log(__METHOD__ . ' ' . print_r([$command, $args], 1));
 
       if (!$command or strpos($command, 'Rewrite') === false) {
         continue;
       }
+
+      constant('Config::debug') && error_log(__METHOD__ . ' ' . print_r(['$command' => $command, '$args' => $args], 1));
       $args = preg_split('/ +/', trim($args));
       if ($command === 'RewriteEngine' && strtolower($args[0]) === 'on') {
         self::$rewriteURI = true;
@@ -145,19 +149,22 @@ class Router
       }
       if ($command === 'RewriteCond') {
         if ($args[0] === '%{REQUEST_FILENAME}') {
+          constant('Config::debug') && error_log('Test file: '. self::$docRoot . self::$requestURI);
           if ($args[1] === '!-d' && is_dir(self::$docRoot . self::$requestURI)) {
+            constant('Config::debug') && error_log('Fail on test');
             return;
           }
           if ($args[1] === '!-f' && is_file(self::$docRoot . self::$requestURI)) {
+            constant('Config::debug') && error_log('Fail on test');
             return;
           }
         }
       }
       if ($command === 'RewriteRule') {
-        $newURI = preg_replace('/' . $args[0] . '/', explode('?', $args[1])[0], ltrim(self::$pathInfo, '/'));
+        $newURI = preg_replace(':' . $args[0] . ':', explode('?', $args[1])[0], ltrim(self::$pathInfo, '/'));
         self::$pathInfo = substr(self::$requestURI, strlen($currentUri));
         self::$prevPathInfo = $newURI;
-        error_log(__METHOD__ . ' ' . __LINE__ . ' ' . print_r([$newURI, $dir, $currentUri], 1));
+        error_log(__METHOD__ . ' ' . __LINE__ . ' ' . print_r(compact('newURI', 'dir', 'currentUri'), 1));
         self::$requestURI = $currentUri . '/' . $newURI;
 
         return self::serveURI();
@@ -181,14 +188,15 @@ class Router
 
   protected static function serveScript($script, $dir, $currentUri)
   {
-    constant('Config::debug') && error_log(__METHOD__ . ' ' . print_r(func_get_args(), 1));
-    constant('Config::debug') && error_log(print_r($_SERVER, 1));
-    constant('Config::debug') && error_log(print_r(['pathInfo' => self::$pathInfo], 1));
+    // constant('Config::debug') && error_log(__METHOD__ . ' ' . print_r(compact('script','dir','currentUri'), 1));
+    // constant('Config::debug') && error_log(print_r($_SERVER, 1));
+    // constant('Config::debug') && error_log(print_r(['pathInfo' => self::$pathInfo, 'prevPath' => self::$prevPathInfo], 1));
     error_log(__METHOD__ . " SCRIPT_FILENAME = $script");
 
     // PHP Built-in server fails to serve path that contains dot
     $hasDotInDir = strpos($dir, '.') !== false;
     if (!$hasDotInDir && self::isDot('php', $script) && !self::$prevPathInfo) {
+      constant('Config::debug') && error_log('procesed by php!');
       return false;
     }
 
@@ -204,6 +212,7 @@ class Router
 
   protected static function includeScript($script)
   {
+    constant('Config::debug') && error_log("Include script: $script");
     chdir(dirname($script));
     include $_SERVER['SCRIPT_FILENAME'] = $script;
     exit();
