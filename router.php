@@ -76,7 +76,7 @@ class Router
 
     $i = 0;
     do {
-      self::$pathInfo = basename($currentUri) . (self::$pathInfo !== null ? '/' . self::$pathInfo : '');
+      self::$pathInfo = '/'. basename($currentUri) . self::$pathInfo;
       $currentUri = rtrim(str_replace('\\', '/', dirname($currentUri)), '/');
       $dir = self::$docRoot . $currentUri;
 
@@ -111,6 +111,7 @@ class Router
         if (self::serveHtaccess($script, $dir, $currentUri) === null) {
           continue;
         }
+        self::$pathInfo = preg_replace(':^/'.$script.':', '', self::$pathInfo);
         return self::serveScript($script, $dir, $currentUri);
       }
     }
@@ -166,7 +167,7 @@ class Router
         self::$prevPathInfo = $newURI;
         error_log(__METHOD__ . ' ' . __LINE__ . ' ' . print_r(compact('newURI', 'dir', 'currentUri'), 1));
         self::$requestURI = $currentUri . '/' . $newURI;
-
+        self::$pathInfo = null;
         return self::serveURI();
       }
     }
