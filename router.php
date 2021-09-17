@@ -49,7 +49,7 @@ class Router
   protected static function serveURI()
   {
     constant('Config::debug') && error_log(__METHOD__);
-    $currentUri = self::$requestURI;
+    $currentUri = self::getFilePath(self::$requestURI);
     error_log("REQUEST_URI = $currentUri");
 
     if (self::isProtected($currentUri)) {
@@ -68,10 +68,7 @@ class Router
       if (self::isDot('php', $path)) {
         return self::serveScript($path, dirname($path), '');
       }
-      if (self::$pathInfo !== null) {
-        self::readFile($path);
-      }
-      return false;
+      self::readFile($path);
     }
 
     $i = 0;
@@ -162,10 +159,8 @@ class Router
         }
       }
       if ($command === 'RewriteRule') {
-        $newURI = preg_replace(':' . $args[0] . ':', explode('?', $args[1])[0], ltrim(self::$pathInfo, '/'));
-        self::$pathInfo = substr(self::$requestURI, strlen($currentUri));
-        self::$prevPathInfo = $newURI;
-        error_log(__METHOD__ . ' ' . __LINE__ . ' ' . print_r(compact('newURI', 'dir', 'currentUri'), 1));
+        $newURI = preg_replace(':' . $args[0] . ':', $args[1], ltrim(self::$pathInfo, '/'));
+        self::$prevPathInfo = substr(self::$requestURI, strlen($currentUri));
         self::$requestURI = $currentUri . '/' . $newURI;
         self::$pathInfo = null;
         return self::serveURI();
@@ -196,12 +191,12 @@ class Router
 
     // PHP Built-in server fails to serve path that contains dot
     $hasDotInDir = strpos($dir, '.') !== false;
-    if (!$hasDotInDir && self::isDot('php', $script) && !self::$prevPathInfo) {
+    if (!$hasDotInDir && self::isDot('php', $script) && self::$prevPathInfo === null) {
       constant('Config::debug') && error_log('procesed by php!');
       return false;
     }
 
-    if (self::$pathInfo !== null) {
+    if (self::$pathInfo !== null OR self::$prevPathInfo !== null) {
       $_SERVER['SCRIPT_NAME'] = substr($script, strlen(self::$docRoot));
     } else {
       $_SERVER['SCRIPT_NAME'] .= $script;
@@ -219,10 +214,14 @@ class Router
     exit();
   }
 
+  protected static function getFilePath($url)
+  {
+    return explode('?', $url)[0];
+  }
+
   protected static function setRequestURI()
   {
-    $exploded = explode('?', $_SERVER['REQUEST_URI'], 2);
-    return self::$requestURI = rtrim($exploded[0], '/');
+    return self::$requestURI = rtrim(self::getFilePath($_SERVER['REQUEST_URI']), '/');
   }
 
   protected static function showFiles($dir)
