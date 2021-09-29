@@ -21,11 +21,13 @@ class Router
   private static $rewriteURI;
   private static $parsedHtaccess = [];
 
-  private static $types = [
-    'css' => 'text/css',
-    'svg' => 'image/svg+xml',
-    'js' => 'text/javascript',
-    'pdf' => 'application/pdf',
+  private static $type2Exts = [
+    'text/css' => 'css',
+    'text/javascript' => 'js',
+    'image/svg+xml' => 'svg',
+    'image/' => 'png,gif,jpg,jpeg,webp',
+    'video/' => 'mp4,webm',
+    'application/pdf' => 'pdf',
   ];
 
   // default = index.php,index.html
@@ -279,10 +281,16 @@ class Router
 
   protected static function readFile($file, $ext = null)
   {
-    $ext = $ext ?: pathinfo($file, PATHINFO_EXTENSION);
-    if (isset(self::$types[$ext])) {
-      header('content-type: ' . self::$types[$ext]);
+    $ext = $ext ?: strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+    foreach (self::$type2Exts as $type => $exts) {
+      $exts = explode(',', $exts);
+      if (in_array($ext, $exts)) {
+        header('content-type: ' . ($type[-1] === '/' ? $type . $ext : $type));
+        break;
+      }
     }
+
     readfile($file);
     exit();
   }
