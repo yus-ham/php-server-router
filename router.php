@@ -290,8 +290,13 @@ class Router
       $exts = explode(',', $exts);
       if (in_array($ext, $exts)) {
         header('content-type: ' . ($type[-1] === '/' ? $type . $ext : $type));
+        $setMime = true;
         break;
       }
+    }
+    
+    if (empty($setMime)) {
+      header('content-type: application/octet-stream');
     }
 
     readfile($file);
