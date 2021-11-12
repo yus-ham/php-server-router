@@ -22,12 +22,15 @@ class Router
   private static $parsedHtaccess = [];
 
   private static $type2Exts = [
+    'text/html' => 'htm,html',
     'text/css' => 'css',
     'text/javascript' => 'js',
     'image/svg+xml' => 'svg',
     'image/' => 'png,gif,jpg,jpeg,webp',
     'video/' => 'mp4,webm',
-    'application/pdf' => 'pdf',
+    'application/json' => 'json,map',
+    'application/' => 'pdf',
+    'font/' => 'woff,woff2',
   ];
 
   // default = index.php,index.html
