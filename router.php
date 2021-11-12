@@ -255,8 +255,12 @@ class Router
 
     foreach ((array) @$_files as $file) {
       $link = "$reqUri/$file";
-      $bytes = filesize($dir . '/' . $file);
-      echo "<tr><td>[&bull;] <a href='$link'>$file</a></td><td><span class=filesize>$bytes</span></td>";
+      if (is_file("$dir/$file")) {
+        $bytes = filesize("$dir/$file");
+        echo "<tr><td>[&bull;] <a href='$link'>$file</a></td><td><span class=filesize>$bytes</span></td>";
+      } else {
+        echo "<tr><td>[&bull;] <s>$file</s></td><td><span class=filesize>0</span></td>";
+      }
       echo "<td><a href='?view=$link'>view</a></td></tr>\n";
     }
     echo "</table>";
