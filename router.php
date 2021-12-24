@@ -241,16 +241,32 @@ class Router
     $reqUri = self::$requestURI;
 
     echo "<table>";
+    $_dirs = [];
+    $_files = [];
     foreach ($files as $file) {
       if ($file === '.') {
         continue;
       }
       $link = "$reqUri/$file/";
+      filemtime("$dir/$file");
       if (is_dir("$dir/$file")) {
-        echo "<tr><td>[&plus;] <a href='$link'>$file/</a></td><td></td><td></td></tr>\n";
+        @$_dirs[] = $file;
       } else {
         @$_files[] = $file;
       }
+    }
+
+    $cmp = function($a, $b) use($dir) {
+      $a = filemtime("$dir/$a");
+      $b = filemtime("$dir/$b");
+      return $a < $b ? -1 : ($a === $b ? 0 : 1);
+    };
+
+    usort($_dirs, $cmp);
+    usort($_files, $cmp);
+
+    foreach ((array) @$_dirs as $item) {
+        echo "<tr><td>[&plus;] <a href='$link'>$item/</a></td><td></td><td></td></tr>\n";
     }
 
     foreach ((array) @$_files as $file) {
