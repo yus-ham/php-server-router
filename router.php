@@ -244,7 +244,7 @@ class Router
     $_dirs = [];
     $_files = [];
     foreach ($files as $file) {
-      if ($file === '.') {
+      if ($file === '.' or $file === '..') {
         continue;
       }
       $link = "$reqUri/$file/";
@@ -265,8 +265,11 @@ class Router
     usort($_dirs, $cmp);
     usort($_files, $cmp);
 
+    echo "<tr><td>[&plus;] <a href='$reqUri/..'>../</a></td><td></td><td></td></tr>\n";
+
     foreach ((array) @$_dirs as $item) {
-        echo "<tr><td>[&plus;] <a href='$link'>$item/</a></td><td></td><td></td></tr>\n";
+      $link = "$reqUri/$item";
+      echo "<tr><td>[&plus;] <a href='$link'>$item/</a></td><td></td><td></td></tr>\n";
     }
 
     foreach ((array) @$_files as $file) {
