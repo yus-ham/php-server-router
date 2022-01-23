@@ -24,7 +24,7 @@ class Router
   private static $type2Exts = [
     'text/html' => 'htm,html',
     'text/css' => 'css',
-    'text/javascript' => 'js',
+    'text/javascript' => 'js,mjs',
     'image/svg+xml' => 'svg',
     'image/' => 'png,gif,jpg,jpeg,webp',
     'video/' => 'mp4,webm',
