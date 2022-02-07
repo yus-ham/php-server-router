@@ -97,7 +97,7 @@ class Router
         self::$scripts = array_merge(explode(',', $altScripts), self::$scripts);
       }
 
-      array_unshift(self::$scripts, '.htaccess');
+      array_unshift(self::$scripts, '.phps-ignore', '.htaccess');
     }
     return self::$scripts;
   }
@@ -110,11 +110,29 @@ class Router
       constant('Config::debug') && error_log("trying script: $script");
       if (is_file($script)) {
         constant('Config::debug') && error_log("Script found!");
+        if (self::servePhpsIgnore($script, $dir, $currentUri) === null) {
+          continue;
+        }
         if (self::serveHtaccess($script, $dir, $currentUri) === null) {
           continue;
         }
         self::$pathInfo = preg_replace(':^/'.$script.':', '', self::$pathInfo);
         return self::serveScript($script, $dir, $currentUri);
+      }
+    }
+  }
+
+  protected static function servePhpsIgnore($file)
+  {
+    if (!self::isDot('phps-ignore', $file)) {
+      return false;
+    }
+    $ignoreList = require $file;
+    foreach ($ignoreList as $path) {
+      $path = '/'. trim($path, '/');
+      if (self::$pathInfo === $path) {
+        http_response_code(404);
+        exit('HTTP/1.1 404 Not Found');
       }
     }
   }
