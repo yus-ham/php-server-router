@@ -107,32 +107,12 @@ class Router
     constant('Config::debug') && error_log(print_r([__METHOD__, '$dir' => $dir, '$currentUri' => $currentUri, '$pathInfo' => self::$pathInfo],1));
     foreach (self::getScripts() as $script) {
       $script = $dir . '/' . $script;
-      constant('Config::debug') && error_log("trying script: $script");
       if (is_file($script)) {
-        constant('Config::debug') && error_log("Script found!");
-        if (self::servePhpsIgnore($script, $dir, $currentUri) === null) {
-          continue;
-        }
         if (self::serveHtaccess($script, $dir, $currentUri) === null) {
           continue;
         }
         self::$pathInfo = preg_replace(':^/'.$script.':', '', self::$pathInfo);
         return self::serveScript($script, $dir, $currentUri);
-      }
-    }
-  }
-
-  protected static function servePhpsIgnore($file)
-  {
-    if (!self::isDot('phps-ignore', $file)) {
-      return false;
-    }
-    $ignoreList = require $file;
-    foreach ($ignoreList as $path) {
-      $path = '/'. trim($path, '/');
-      if (self::$pathInfo === $path) {
-        http_response_code(404);
-        exit('HTTP/1.1 404 Not Found');
       }
     }
   }
@@ -153,9 +133,22 @@ class Router
       if ($stopParsing) {
         return;
       }
+
       @list($command, $args) = explode(' ', trim($line), 2);
 
-      if (!$command or strpos($command, 'Rewrite') === false) {
+      if (!$command) {
+        continue;
+      } 
+
+      if ($command === '#phps-ignore') {
+        self::runPhpsIgnore($args);
+      }
+
+      if ($command[0] === '#') {
+        continue;
+      }
+
+      if (strpos($command, 'Rewrite') === false) {
         continue;
       }
 
@@ -190,6 +183,13 @@ class Router
       }
     }
     return true;
+  }
+
+  protected static function runPhpsIgnore($path)
+  {
+    if (preg_match('#'.preg_quote(trim($path)).'#', self::$pathInfo)) {
+      die(!http_response_code(404));
+    }
   }
 
   protected static function serveDir($dir, $currentUri)
