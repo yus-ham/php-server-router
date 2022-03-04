@@ -97,7 +97,7 @@ class Router
         self::$scripts = array_merge(explode(',', $altScripts), self::$scripts);
       }
 
-      array_unshift(self::$scripts, '.phps-ignore', '.htaccess');
+      array_unshift(self::$scripts, '.htaccess');
     }
     return self::$scripts;
   }
@@ -138,7 +138,7 @@ class Router
 
       if (!$command) {
         continue;
-      } 
+      }
 
       if ($command === '#phps-ignore') {
         self::runPhpsIgnore($args);
