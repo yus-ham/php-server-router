@@ -11,7 +11,7 @@ namespace Yusham\PhpServerRouter
 
     class Config
     {
-        const debug = true;
+        const debug = false;
         const protected_paths = '~/\.git(\/.*)?$~';
         const show_files = true;
     }
