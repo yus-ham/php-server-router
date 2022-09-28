@@ -139,25 +139,18 @@ namespace Yusham\PhpServerRouter
             }
             self::$parsedHtaccess[] = $file;
             $stopParsing = false;
+            $lines = file($file);
 
-            foreach (file($file) as $line) {
-                if ($stopParsing) {
-                    return;
-                }
-
+            foreach ($lines as $line) {
                 @list($command, $args) = explode(' ', trim($line), 2);
-
-                if (!$command) {
-                    continue;
-                }
 
                 if ($command === '#phps-ignore') {
                     self::runPhpsIgnore($args);
                 }
+            }
 
-                if ($command[0] === '#') {
-                    continue;
-                }
+            foreach ($lines as $line) {
+                @list($command, $args) = explode(' ', trim($line), 2);
 
                 if (strpos($command, 'Rewrite') === false) {
                     continue;
