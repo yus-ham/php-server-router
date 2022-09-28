@@ -178,7 +178,7 @@ namespace Yusham\PhpServerRouter
                     if (self::$redirectNum === 5) {
                         return;
                     }
-                    $newURI = preg_replace(':' . preg_quote($args[0]) . ':', $args[1], ltrim(self::$pathInfo, '/'));
+                    $newURI = preg_replace(':' . $args[0] . ':', $args[1], ltrim(self::$pathInfo, '/'));
                     self::$prevPathInfo = substr(self::$requestURI, strlen($currentUri));
                     self::$requestURI = $currentUri . '/' . $newURI;
                     self::$pathInfo = '';
