@@ -1,10 +1,10 @@
 <?php
-// @link https://github.com/sup-ham/php-server-router
+// @link https://github.com/yus-ham/php-server-router
 
 // env vars
 // ALT_SCRIPT=index.php,__app.html,etc...   comma separated
 
-namespace Supham\PhpServerRouter
+namespace Yusham\PhpServerRouter
 {
     $_SERVER['SERVER_SOFTWARE'] = $_SERVER['SERVER_SOFTWARE'] .' | Apache conf enabled';
 
