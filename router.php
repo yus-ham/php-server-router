@@ -327,6 +327,8 @@ namespace Yusham\PhpServerRouter
                 header('content-type: application/octet-stream');
             }
 
+            header('expires: '. date(DATE_RFC7231, time() + $maxAge = 31536000));
+            header('cache-control: max-age='. $maxAge);
             readfile($file);
             exit();
         }
