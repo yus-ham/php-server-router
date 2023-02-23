@@ -27,15 +27,16 @@ namespace Yusham\PhpServerRouter
         private static $parsedHtaccess = [];
 
         private static $type2Exts = [
-          'text/html' => 'htm,html',
-          'text/css' => 'css',
-          'text/javascript' => 'js,mjs',
-          'image/svg+xml' => 'svg',
-          'image/' => 'png,gif,jpg,jpeg,webp',
-          'video/' => 'mp4,webm',
-          'application/json' => 'json,map',
-          'application/' => 'pdf',
-          'font/' => 'woff,woff2',
+            'text/html' => 'htm,html',
+            'text/css' => 'css',
+            'text/javascript' => 'js,mjs',
+            'image/svg+xml' => 'svg',
+            'image/' => 'png,gif,jpg,jpeg,webp',
+            'audio/' => 'mp3',
+            'video/' => 'mp4,webm',
+            'application/json' => 'json,map',
+            'application/' => 'pdf',
+            'font/' => 'woff,woff2',
         ];
 
         // default = index.php,index.html
@@ -152,7 +153,7 @@ namespace Yusham\PhpServerRouter
             foreach ($lines as $line) {
                 @list($command, $args) = explode(' ', trim($line), 2);
 
-                if (strpos($command, 'Rewrite') === false) {
+                if (strpos($command, 'Rewrite') !== 0) {
                     continue;
                 }
 
