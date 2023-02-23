@@ -179,7 +179,7 @@ namespace Yusham\PhpServerRouter
                     if (self::$redirectNum === 5) {
                         return;
                     }
-                    $newURI = preg_replace(':' . $args[0] . ':', $args[1], ltrim(self::$pathInfo, '/'));
+                    $newURI = preg_replace(':' . ($args[0] === '.' ? '.+' : $args[0]) . ':', $args[1], ltrim(self::$pathInfo, '/'));
                     self::$prevPathInfo = substr(self::$requestURI, strlen($currentUri));
                     self::$requestURI = $currentUri . '/' . $newURI;
                     self::$pathInfo = '';
@@ -188,7 +188,6 @@ namespace Yusham\PhpServerRouter
                     return self::serveURI();
                 }
             }
-            return true;
         }
 
         protected static function runPhpsIgnore($path)
