@@ -78,12 +78,15 @@ namespace Yusham\PhpServerRouter
             $path = self::$docRoot . $currentUri;
 
             if (is_dir($path)) {
+                if (substr($currentUri, -1) !== '/') {
+                    exit(header("Location: $currentUri/"));
+                }
                 return self::serveDir($path, $currentUri);
             }
 
             if (is_file($path)) {
                 if (self::isDot('php', $path)) {
-                    return self::serveScript($path, dirname($path), '');
+                    return self::serveScript($path, dirname($path));
                 }
                 self::readFile($path);
             }
@@ -123,7 +126,7 @@ namespace Yusham\PhpServerRouter
                         continue;
                     }
                     self::$pathInfo = preg_replace(':^/'.preg_quote($script).':', '', self::$pathInfo);
-                    return self::serveScript($script, $dir, $currentUri);
+                    return self::serveScript($script, $dir);
                 }
             }
         }
@@ -209,7 +212,7 @@ namespace Yusham\PhpServerRouter
             }
         }
 
-        protected static function serveScript($script, $dir, $currentUri)
+        protected static function serveScript($script, $dir)
         {
             // PHP Built-in server fails to serve path that contains dot
             $hasDotInDir = strpos($dir, '.') !== false;
@@ -241,7 +244,7 @@ namespace Yusham\PhpServerRouter
 
         protected static function setRequestURI()
         {
-            return self::$requestURI = rtrim(str_replace('//', '/', self::getFilePath($_SERVER['REQUEST_URI'])), '/');
+            return self::$requestURI = str_replace('//', '/', self::getFilePath($_SERVER['REQUEST_URI']));
         }
 
         protected static function showFiles($dir)
@@ -262,7 +265,6 @@ namespace Yusham\PhpServerRouter
                 if ($file === '.' or $file === '..') {
                     continue;
                 }
-                $link = "$reqUri/$file/";
                 @filemtime("$dir/$file");
                 if (is_dir("$dir/$file")) {
                     @$_dirs[] = $file;
@@ -271,15 +273,15 @@ namespace Yusham\PhpServerRouter
                 }
             }
 
-            echo "<tr><td>[&plus;] <a href='$reqUri/..'>../</a></td><td></td><td></td></tr>\n";
+            $reqUri === '/' OR empty($reqUri) OR print("<tr><td>[&plus;] <a href='$reqUri..'>../</a></td><td></td><td></td></tr>\n");
 
             foreach ((array) @$_dirs as $item) {
-                $link = "$reqUri/$item";
+                $link = "$reqUri$item/";
                 echo "<tr><td>[&plus;] <a href='$link'>$item/</a></td><td></td><td></td></tr>\n";
             }
 
             foreach ((array) @$_files as $file) {
-                $link = "$reqUri/$file";
+                $link = "$reqUri$file";
                 if (is_file("$dir/$file")) {
                     $bytes = filesize("$dir/$file");
                     echo "<tr><td>[&bull;] <a href='$link'>$file</a></td><td><span class=filesize>$bytes</span></td>";
@@ -322,7 +324,7 @@ namespace Yusham\PhpServerRouter
                     break;
                 }
             }
-    
+
             if (empty($setMime)) {
                 header('content-type: application/octet-stream');
             }
