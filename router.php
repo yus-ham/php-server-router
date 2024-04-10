@@ -221,7 +221,8 @@ namespace Yusham\PhpServerRouter
             }
 
             if (self::$pathInfo !== null or self::$prevPathInfo !== null) {
-                $_SERVER['SCRIPT_NAME'] = substr($script, strlen(self::$docRoot));
+                $baseURI = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+                $_SERVER['SCRIPT_NAME'] = ($baseURI === '/' ? '' : $baseURI) . substr($script, strlen($dir));
             } else {
                 $_SERVER['SCRIPT_NAME'] .= $script;
             }
