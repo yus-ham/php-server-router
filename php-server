@@ -1,0 +1,41 @@
+#!/bin/env php
+<?php
+
+$port = 8000;
+$dir = '/var/www/html';
+$arg1 = $_SERVER['argv'][1] ?? '';
+
+if ($arg1) {
+  if ($arg1[0] === ':') {
+    $port = substr($arg1, 1);
+    $dir = $_SERVER['argv'][2] ?? $dir;
+  } else {
+    $dir = $arg1;
+  }
+}
+
+
+$dir = realpath($dir);
+
+$net_ifs = net_get_interfaces();
+
+foreach ($net_ifs as $if) {
+  foreach ($if['unicast'] as $config) {
+    if (str_starts_with($config['address'] ?? '', '192.')) {
+      $net = $config['address'];
+      break;
+    }
+  }
+}
+
+echo "PHP Server started\n";
+echo "  - Document root: $dir\n";
+echo "  - Local: http://127.0.0.1:$port/\n";
+
+if (isset($net)) {
+  echo "  - Network: http://$net:$port/\n";
+}
+
+echo "\n";
+putenv('PHP_CLI_SERVER_WORKERS=10');
+exec("php -S 0.0.0.0:$port -t $dir ". __DIR__ ."/router.php");
